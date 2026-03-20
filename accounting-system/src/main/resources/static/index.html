@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人收支记账系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #219a52;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-card.income {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .stat-card.expense {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        
+        .stat-card.balance {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .transaction-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s;
+        }
+        
+        .transaction-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .transaction-info h4 {
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .transaction-info p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .transaction-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .transaction-amount.income {
+            color: #27ae60;
+        }
+        
+        .transaction-amount.expense {
+            color: #e74c3c;
+        }
+        
+        .transaction-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .category-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            background: #e9ecef;
+            color: #495057;
+            margin-left: 8px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .user-info span {
+            color: white;
+            font-size: 1.1rem;
+        }
+        
+        .category-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        
+        .category-stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .transaction-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .transaction-actions {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 个人收支记账系统</h1>
+            <p>轻松管理您的财务</p>
+        </div>
+
+        <!-- 登录/注册区域 -->
+        <div id="authSection" class="card">
+            <div class="card-title">用户登录</div>
+            <div id="authMessage"></div>
+            
+            <div id="loginForm">
+                <div class="form-group">
+                    <label>用户名（手机号/邮箱）</label>
+                    <input type="text" id="loginUsername" placeholder="请输入手机号或邮箱">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="login()">登录</button>
+                    <button class="btn btn-secondary" onclick="showRegister()">注册账号</button>
+                </div>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>用户名（手机号/邮箱）</label>
+                    <input type="text" id="regUsername" placeholder="请输入手机号或邮箱">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="regPassword" placeholder="请输入密码（6-20位）">
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" id="regConfirmPassword" placeholder="请再次输入密码">
+                </div>
+                <div class="form-group">
+                    <label>昵称（可选）</label>
+                    <input type="text" id="regNickname" placeholder="请输入昵称">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="register()">注册</button>
+                    <button class="btn btn-secondary" onclick="showLogin()">返回登录</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主应用区域 -->
+        <div id="mainSection" class="hidden">
+            <div class="user-info">
+                <span>欢迎，<span id="userNickname"></span>！</span>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="showChangePassword()">修改密码</button>
+                    <button class="btn btn-danger" onclick="logout()">退出登录</button>
+                </div>
+            </div>
+
+            <!-- 统计概览 -->
+            <div class="card">
+                <div class="card-title">📊 收支概览</div>
+                <div class="filter-group">
+                    <input type="date" id="statStartDate">
+                    <span>至</span>
+                    <input type="date" id="statEndDate">
+                    <button class="btn btn-primary btn-small" onclick="loadStatistics()">查询</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card income">
+                        <div class="stat-value" id="totalIncome">¥0.00</div>
+                        <div class="stat-label">总收入</div>
+                    </div>
+                    <div class="stat-card expense">
+                        <div class="stat-value" id="totalExpense">¥0.00</div>
+                        <div class="stat-label">总支出</div>
+                    </div>
+                    <div class="stat-card balance">
+                        <div class="stat-value" id="balance">¥0.00</div>
+                        <div class="stat-label">结余</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类统计 -->
+            <div class="card">
+                <div class="card-title">📈 分类统计</div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px;">收入分类</h4>
+                    <div id="incomeCategoryStats" class="category-stats"></div>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 12px;">支出分类</h4>
+                    <div id="expenseCategoryStats" class="category-stats"></div>
+                </div>
+            </div>
+
+            <!-- 添加记账 -->
+            <div class="card">
+                <div class="card-title" id="formTitle">➕ 添加收支记录</div>
+                <div id="transactionMessage"></div>
+                <input type="hidden" id="editTransactionId">
+                
+                <div class="form-group">
+                    <label>类型</label>
+                    <select id="transactionType" onchange="loadCategories()">
+                        <option value="EXPENSE">支出</option>
+                        <option value="INCOME">收入</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>分类</label>
+                    <select id="transactionCategory"></select>
+                </div>
+                <div class="form-group">
+                    <label>金额</label>
+                    <input type="number" id="transactionAmount" placeholder="请输入金额" step="0.01" min="0.01">
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" id="transactionRemark" placeholder="请输入备注（可选）">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveTransaction()" id="saveBtn">保存</button>
+                    <button class="btn btn-secondary hidden" onclick="cancelEdit()" id="cancelBtn">取消</button>
+                </div>
+            </div>
+
+            <!-- 记账列表 -->
+            <div class="card">
+                <div class="card-title">📝 收支记录</div>
+                <div class="filter-group">
+                    <select id="filterType">
+                        <option value="">全部类型</option>
+                        <option value="INCOME">收入</option>
+                        <option value="EXPENSE">支出</option>
+                    </select>
+                    <select id="filterCategory">
+                        <option value="">全部分类</option>
+                    </select>
+                    <input type="date" id="filterStartDate">
+                    <span>至</span>
+                    <input type="date" id="filterEndDate">
+                    <button class="btn btn-primary btn-small" onclick="loadTransactions()">筛选</button>
+                </div>
+                <div id="transactionList" class="transaction-list"></div>
+                <div class="pagination">
+                    <button class="btn btn-secondary btn-small" onclick="prevPage()">上一页</button>
+                    <span id="pageInfo">第 1 页</span>
+                    <button class="btn btn-secondary btn-small" onclick="nextPage()">下一页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改密码弹窗 -->
+        <div id="passwordModal" class="card hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; min-width: 300px;">
+            <div class="card-title">修改密码</div>
+            <div id="passwordMessage"></div>
+            <div class="form-group">
+                <label>旧密码</label>
+                <input type="password" id="oldPassword" placeholder="请输入旧密码">
+            </div>
+            <div class="form-group">
+                <label>新密码</label>
+                <input type="password" id="newPassword" placeholder="请输入新密码（6-20位）">
+            </div>
+            <div class="form-group">
+                <label>确认新密码</label>
+                <input type="password" id="confirmNewPassword" placeholder="请再次输入新密码">
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="changePassword()">确认修改</button>
+                <button class="btn btn-secondary" onclick="hideChangePassword()">取消</button>
+            </div>
+        </div>
+        <div id="modalOverlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;" onclick="hideChangePassword()"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '';
+        let token = localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        let currentPage = 1;
+        let pageSize = 10;
+        let categories = {
+            INCOME: ['薪资', '奖金', '投资', '兼职', '红包', '其他收入'],
+            EXPENSE: ['餐饮', '交通', '购物', '娱乐', '住房', '医疗', '教育', '通讯', '其他支出']
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            if (token && currentUser.id) {
+                showMainSection();
+            }
+            loadCategories();
+            
+            // 设置默认日期
+            const today = new Date().toISOString().split('T')[0];
+            const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+            document.getElementById('statStartDate').value = firstDayOfMonth;
+            document.getElementById('statEndDate').value = today;
+        });
+
+        // 显示消息
+        function showMessage(elementId, message, isSuccess) {
+            const element = document.getElementById(elementId);
+            element.className = 'message ' + (isSuccess ? 'success' : 'error');
+            element.textContent = message;
+            setTimeout(() => {
+                element.textContent = '';
+                element.className = '';
+            }, 3000);
+        }
+
+        // 显示注册表单
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.querySelector('#authSection .card-title').textContent = '用户注册';
+        }
+
+        // 显示登录表单
+        function showLogin() {
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.querySelector('#authSection .card-title').textContent = '用户登录';
+        }
+
+        // 显示主界面
+        function showMainSection() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+            document.getElementById('userNickname').textContent = currentUser.nickname || currentUser.username;
+            loadStatistics();
+            loadTransactions();
+        }
+
+        // 注册
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const nickname = document.getElementById('regNickname').value;
+
+            if (!username || !password || !confirmPassword) {
+                showMessage('authMessage', '请填写完整信息', false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, confirmPassword, nickname })
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    showMessage('authMessage', '注册成功，请登录', true);
+                    showLogin();
+                } else {
+                    showMessage('authMessage', data.msg, false);
+                }
+            } catch (error) {
+                showMessage('authMessage', '网络错误，请稍后重试', false);
+            }
+        }
+
+        // 登录
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showMessage('authMessage', '请输入用户名和密码', false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    token = data.data.token;
+                    currentUser = data.data;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    showMainSection();
+                } else {
+                    showMessage('authMessage', data.msg, false);
+                }
+            } catch (error) {
+                showMessage('authMessage', '网络错误，请稍后重试', false);
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            token = null;
+            currentUser = {};
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            showLogin();
+        }
+
+        // 加载分类选项
+        function loadCategories() {
+            const type = document.getElementById('transactionType').value;
+            const categorySelect = document.getElementById('transactionCategory');
+            categorySelect.innerHTML = '';
+            
+            categories[type].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // 保存记账记录
+        async function saveTransaction() {
+            const id = document.getElementById('editTransactionId').value;
+            const type = document.getElementById('transactionType').value;
+            const category = document.getElementById('transactionCategory').value;
+            const amount = document.getElementById('transactionAmount').value;
+            const remark = document.getElementById('transactionRemark').value;
+
+            if (!amount || amount <= 0) {
+                showMessage('transactionMessage', '请输入有效的金额', false);
+                return;
+            }
+
+            const url = id ? `${API_BASE_URL}/api/transaction/${id}` : `${API_BASE_URL}/api/transaction`;
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ type, category, amount: parseFloat(amount), remark })
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    showMessage('transactionMessage', id ? '修改成功' : '添加成功', true);
+                    resetTransactionForm();
+                    loadTransactions();
+                    loadStatistics();
+                } else {
+                    showMessage('transactionMessage', data.msg, false);
+                }
+            } catch (error) {
+                showMessage('transactionMessage', '网络错误，请稍后重试', false);
+            }
+        }
+
+        // 重置表单
+        function resetTransactionForm() {
+            document.getElementById('editTransactionId').value = '';
+            document.getElementById('transactionType').value = 'EXPENSE';
+            document.getElementById('transactionAmount').value = '';
+            document.getElementById('transactionRemark').value = '';
+            document.getElementById('formTitle').textContent = '➕ 添加收支记录';
+            document.getElementById('saveBtn').textContent = '保存';
+            document.getElementById('cancelBtn').classList.add('hidden');
+            loadCategories();
+        }
+
+        // 取消编辑
+        function cancelEdit() {
+            resetTransactionForm();
+        }
+
+        // 加载记账列表
+        async function loadTransactions() {
+            const type = document.getElementById('filterType').value;
+            const category = document.getElementById('filterCategory').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
+            let url = `${API_BASE_URL}/api/transaction/list?pageNum=${currentPage}&pageSize=${pageSize}`;
+            if (type) url += `&type=${type}`;
+            if (category) url += `&category=${category}`;
+            if (startDate) url += `&startTime=${startDate}T00:00:00`;
+            if (endDate) url += `&endTime=${endDate}T23:59:59`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    renderTransactionList(data.data.list);
+                    document.getElementById('pageInfo').textContent = `第 ${data.data.pageNum} 页 / 共 ${data.data.totalPages} 页`;
+                }
+            } catch (error) {
+                console.error('加载记账列表失败:', error);
+            }
+        }
+
+        // 渲染记账列表
+        function renderTransactionList(list) {
+            const container = document.getElementById('transactionList');
+            if (list.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">暂无记录</p>';
+                return;
+            }
+
+            container.innerHTML = list.map(item => `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <h4>${item.category} <span class="category-tag">${item.typeName}</span></h4>
+                        <p>${item.remark || '无备注'} · ${new Date(item.createTime).toLocaleString()}</p>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <div class="transaction-amount ${item.type.toLowerCase()}">
+                            ${item.type === 'INCOME' ? '+' : '-'}¥${parseFloat(item.amount).toFixed(2)}
+                        </div>
+                        <div class="transaction-actions">
+                            <button class="btn btn-primary btn-small" onclick="editTransaction(${item.id}, '${item.type}', '${item.category}', ${item.amount}, '${item.remark || ''}')">编辑</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteTransaction(${item.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 编辑记账记录
+        function editTransaction(id, type, category, amount, remark) {
+            document.getElementById('editTransactionId').value = id;
+            document.getElementById('transactionType').value = type;
+            loadCategories();
+            document.getElementById('transactionCategory').value = category;
+            document.getElementById('transactionAmount').value = amount;
+            document.getElementById('transactionRemark').value = remark;
+            document.getElementById('formTitle').textContent = '✏️ 编辑收支记录';
+            document.getElementById('saveBtn').textContent = '更新';
+            document.getElementById('cancelBtn').classList.remove('hidden');
+        }
+
+        // 删除记账记录
+        async function deleteTransaction(id) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transaction/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    loadTransactions();
+                    loadStatistics();
+                } else {
+                    alert(data.msg);
+                }
+            } catch (error) {
+                alert('删除失败，请稍后重试');
+            }
+        }
+
+        // 加载统计数据
+        async function loadStatistics() {
+            const startDate = document.getElementById('statStartDate').value;
+            const endDate = document.getElementById('statEndDate').value;
+
+            let url = `${API_BASE_URL}/api/transaction/statistics`;
+            if (startDate) url += `?startTime=${startDate}T00:00:00`;
+            if (endDate) url += `${startDate ? '&' : '?'}endTime=${endDate}T23:59:59`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    document.getElementById('totalIncome').textContent = '¥' + parseFloat(data.data.totalIncome).toFixed(2);
+                    document.getElementById('totalExpense').textContent = '¥' + parseFloat(data.data.totalExpense).toFixed(2);
+                    document.getElementById('balance').textContent = '¥' + parseFloat(data.data.balance).toFixed(2);
+
+                    renderCategoryStats('incomeCategoryStats', data.data.incomeByCategory, data.data.totalIncome);
+                    renderCategoryStats('expenseCategoryStats', data.data.expenseByCategory, data.data.totalExpense);
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+
+        // 渲染分类统计
+        function renderCategoryStats(elementId, stats, total) {
+            const container = document.getElementById(elementId);
+            if (!stats || stats.length === 0) {
+                container.innerHTML = '<p style="color: #888;">暂无数据</p>';
+                return;
+            }
+
+            container.innerHTML = stats.map(item => {
+                const percentage = total > 0 ? (item.amount / total * 100).toFixed(1) : 0;
+                return `
+                    <div class="category-stat-item">
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>${item.category}</span>
+                                <span>¥${parseFloat(item.amount).toFixed(2)} (${percentage}%)</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 分页
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadTransactions();
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            loadTransactions();
+        }
+
+        // 显示修改密码弹窗
+        function showChangePassword() {
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('modalOverlay').classList.remove('hidden');
+        }
+
+        // 隐藏修改密码弹窗
+        function hideChangePassword() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            document.getElementById('modalOverlay').classList.add('hidden');
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+        }
+
+        // 修改密码
+        async function changePassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showMessage('passwordMessage', '请填写完整信息', false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ oldPassword, newPassword, confirmPassword })
+                });
+                const data = await response.json();
+
+                if (data.code === 200) {
+                    showMessage('passwordMessage', '密码修改成功', true);
+                    setTimeout(hideChangePassword, 1500);
+                } else {
+                    showMessage('passwordMessage', data.msg, false);
+                }
+            } catch (error) {
+                showMessage('passwordMessage', '网络错误，请稍后重试', false);
+            }
+        }
+    </script>
+</body>
+</html>
