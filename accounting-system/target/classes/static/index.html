@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人收支记账系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.4/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.12.50/lib/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/vant@2.12.50/lib/vant.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .page {
+            padding-bottom: 50px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .balance-card {
+            background: white;
+            margin: -30px 20px 20px;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .balance-info {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+        .income {
+            color: #07c160;
+        }
+        .expense {
+            color: #ee0a24;
+        }
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            margin-bottom: 1px;
+        }
+        .record-left {
+            display: flex;
+            align-items: center;
+        }
+        .record-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+        .record-content {
+            display: flex;
+            flex-direction: column;
+        }
+        .record-category {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .record-time {
+            font-size: 12px;
+            color: #969799;
+            margin-top: 4px;
+        }
+        .record-amount {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .tabbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        .chart-container {
+            background: white;
+            margin: 10px;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .category-name {
+            display: flex;
+            align-items: center;
+        }
+        .category-bar {
+            height: 8px;
+            background: #e8e8e8;
+            border-radius: 4px;
+            flex: 1;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+        .category-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .add-btn {
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            z-index: 99;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 登录页 -->
+        <div v-if="!isLogin" class="page">
+            <div class="header">
+                <h1>个人收支记账系统</h1>
+                <p>轻松管理您的每一笔收支</p>
+            </div>
+            <div style="padding: 20px;">
+                <van-tabbar v-model="loginTab" active-color="#667eea">
+                    <van-tabbar-item name="login">登录</van-tabbar-item>
+                    <van-tabbar-item name="register">注册</van-tabbar-item>
+                </van-tabbar>
+                
+                <!-- 登录表单 -->
+                <div v-if="loginTab === 'login'" style="margin-top: 20px;">
+                    <van-cell-group>
+                        <van-field v-model="loginForm.account" label="账号" placeholder="请输入用户名/手机号/邮箱" clearable />
+                        <van-field v-model="loginForm.password" type="password" label="密码" placeholder="请输入密码" clearable />
+                    </van-cell-group>
+                    <van-button type="primary" block style="margin-top: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" @click="handleLogin">登录</van-button>
+                </div>
+                
+                <!-- 注册表单 -->
+                <div v-if="loginTab === 'register'" style="margin-top: 20px;">
+                    <van-cell-group>
+                        <van-field v-model="registerForm.username" label="用户名" placeholder="请输入用户名" clearable />
+                        <van-field v-model="registerForm.password" type="password" label="密码" placeholder="请输入密码" clearable />
+                        <van-field v-model="registerForm.phone" label="手机号" placeholder="请输入手机号（选填）" clearable />
+                        <van-field v-model="registerForm.email" label="邮箱" placeholder="请输入邮箱（选填）" clearable />
+                    </van-cell-group>
+                    <van-button type="primary" block style="margin-top: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" @click="handleRegister">注册</van-button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主页面 -->
+        <div v-else>
+            <!-- 首页 -->
+            <div v-if="activeTab === 0" class="page">
+                <div class="header">
+                    <h2>我的账本</h2>
+                    <p>{{ currentMonth }}月</p>
+                </div>
+                <div class="balance-card">
+                    <div class="balance-amount">¥{{ monthlyData.balance || '0.00' }}</div>
+                    <div class="balance-info">
+                        <div class="income">
+                            <div>收入</div>
+                            <div style="font-size: 18px; font-weight: 500;">¥{{ monthlyData.totalIncome || '0.00' }}</div>
+                        </div>
+                        <div class="expense">
+                            <div>支出</div>
+                            <div style="font-size: 18px; font-weight: 500;">¥{{ monthlyData.totalExpense || '0.00' }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="padding: 0 10px;">
+                    <h3 style="margin: 15px 10px; font-size: 16px;">最近记录</h3>
+                    <div v-for="record in records" :key="record.id" class="record-item" @click="showRecordDetail(record)">
+                        <div class="record-left">
+                            <div class="record-icon" :style="{ background: record.type === 1 ? '#e8f5e9' : '#ffebee' }">
+                                <span :style="{ color: record.type === 1 ? '#07c160' : '#ee0a24' }">{{ getCategoryIcon(record.category) }}</span>
+                            </div>
+                            <div class="record-content">
+                                <div class="record-category">{{ record.category }}</div>
+                                <div class="record-time">{{ formatTime(record.createTime) }}</div>
+                            </div>
+                        </div>
+                        <div class="record-amount" :class="{ income: record.type === 1, expense: record.type === 2 }">
+                            {{ record.type === 1 ? '+' : '-' }}¥{{ record.amount }}
+                        </div>
+                    </div>
+                    <div v-if="records.length === 0" style="text-align: center; padding: 40px; color: #969799;">
+                        暂无记录，点击右下角按钮添加
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 统计页 -->
+            <div v-if="activeTab === 1" class="page">
+                <div class="header">
+                    <h2>收支统计</h2>
+                    <van-radio-group v-model="statPeriod" direction="horizontal" style="margin-top: 10px;">
+                        <van-radio name="weekly" checked-color="#fff">本周</van-radio>
+                        <van-radio name="monthly" checked-color="#fff">本月</van-radio>
+                    </van-radio-group>
+                </div>
+                
+                <div class="balance-card">
+                    <div class="balance-amount">¥{{ statData.balance || '0.00' }}</div>
+                    <div class="balance-info">
+                        <div class="income">
+                            <div>收入</div>
+                            <div style="font-size: 18px; font-weight: 500;">¥{{ statData.totalIncome || '0.00' }}</div>
+                        </div>
+                        <div class="expense">
+                            <div>支出</div>
+                            <div style="font-size: 18px; font-weight: 500;">¥{{ statData.totalExpense || '0.00' }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 支出分类统计 -->
+                <div class="chart-container">
+                    <div class="chart-title">支出分类占比</div>
+                    <div v-for="(amount, category) in statData.expenseByCategory" :key="category" class="category-item">
+                        <div class="category-name">
+                            <span style="margin-right: 10px;">{{ getCategoryIcon(category) }}</span>
+                            <span>{{ category }}</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-bar-fill" 
+                                 :style="{ width: (amount / statData.totalExpense * 100) + '%', background: '#ee0a24' }"
+                                 v-if="statData.totalExpense > 0"></div>
+                        </div>
+                        <span style="color: #ee0a24;">¥{{ amount }}</span>
+                    </div>
+                    <div v-if="!statData.expenseByCategory || Object.keys(statData.expenseByCategory).length === 0" 
+                         style="text-align: center; padding: 20px; color: #969799;">
+                        暂无支出数据
+                    </div>
+                </div>
+                
+                <!-- 收入分类统计 -->
+                <div class="chart-container">
+                    <div class="chart-title">收入分类占比</div>
+                    <div v-for="(amount, category) in statData.incomeByCategory" :key="category" class="category-item">
+                        <div class="category-name">
+                            <span style="margin-right: 10px;">{{ getCategoryIcon(category) }}</span>
+                            <span>{{ category }}</span>
+                        </div>
+                        <div class="category-bar">
+                            <div class="category-bar-fill" 
+                                 :style="{ width: (amount / statData.totalIncome * 100) + '%', background: '#07c160' }"
+                                 v-if="statData.totalIncome > 0"></div>
+                        </div>
+                        <span style="color: #07c160;">¥{{ amount }}</span>
+                    </div>
+                    <div v-if="!statData.incomeByCategory || Object.keys(statData.incomeByCategory).length === 0" 
+                         style="text-align: center; padding: 20px; color: #969799;">
+                        暂无收入数据
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 我的页面 -->
+            <div v-if="activeTab === 2" class="page">
+                <div class="header">
+                    <h2>个人中心</h2>
+                </div>
+                <div style="padding: 20px;">
+                    <van-cell-group>
+                        <van-cell title="用户名" :value="username" />
+                        <van-cell title="修改密码" is-link @click="showChangePassword = true" />
+                    </van-cell-group>
+                    <van-button type="danger" block style="margin-top: 30px;" @click="handleLogout">退出登录</van-button>
+                </div>
+            </div>
+            
+            <!-- 底部导航 -->
+            <van-tabbar v-model="activeTab" class="tabbar" active-color="#667eea">
+                <van-tabbar-item icon="home-o">首页</van-tabbar-item>
+                <van-tabbar-item icon="chart">统计</van-tabbar-item>
+                <van-tabbar-item icon="user-o">我的</van-tabbar-item>
+            </van-tabbar>
+            
+            <!-- 添加按钮 -->
+            <div class="add-btn" @click="showAddRecord = true">+</div>
+        </div>
+        
+        <!-- 添加记录弹窗 -->
+        <van-popup v-model="showAddRecord" position="bottom" :style="{ height: '80%' }" round>
+            <div style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>添加记录</h3>
+                    <van-icon name="close" @click="showAddRecord = false" />
+                </div>
+                
+                <van-radio-group v-model="recordForm.type" direction="horizontal" style="margin-bottom: 20px;">
+                    <van-radio name="1" checked-color="#07c160">收入</van-radio>
+                    <van-radio name="2" checked-color="#ee0a24">支出</van-radio>
+                </van-radio-group>
+                
+                <van-field v-model.number="recordForm.amount" type="digit" label="金额" placeholder="请输入金额" clearable>
+                    <template #input>
+                        <div style="display: flex; align-items: center;">
+                            <span style="font-size: 20px; margin-right: 5px;">¥</span>
+                            <input v-model.number="recordForm.amount" type="digit" placeholder="0.00" 
+                                   style="border: none; outline: none; font-size: 24px; width: 100%;" />
+                        </div>
+                    </template>
+                </van-field>
+                
+                <van-field label="分类">
+                    <template #right-icon>
+                        <van-popup v-model="showCategoryPicker" position="bottom">
+                            <van-picker :columns="categories" show-toolbar title="选择分类" 
+                                        @confirm="onCategoryConfirm" @cancel="showCategoryPicker = false" />
+                        </van-popup>
+                        <span @click="showCategoryPicker = true" style="color: #969799;">
+                            {{ recordForm.category || '请选择' }}
+                        </span>
+                    </template>
+                </van-field>
+                
+                <van-field v-model="recordForm.remark" type="textarea" label="备注" placeholder="请输入备注（选填）" maxlength="100" show-word-limit />
+                
+                <van-button type="primary" block style="margin-top: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" @click="handleAddRecord">保存</van-button>
+            </div>
+        </van-popup>
+        
+        <!-- 记录详情弹窗 -->
+        <van-popup v-model="showRecordDetailPopup" position="bottom" :style="{ height: '50%' }" round>
+            <div style="padding: 20px;" v-if="currentRecord">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>记录详情</h3>
+                    <van-icon name="close" @click="showRecordDetailPopup = false" />
+                </div>
+                
+                <van-cell-group>
+                    <van-cell title="类型" :value="currentRecord.type === 1 ? '收入' : '支出'" />
+                    <van-cell title="分类" :value="currentRecord.category" />
+                    <van-cell title="金额" :value="'¥' + currentRecord.amount" />
+                    <van-cell title="备注" :value="currentRecord.remark || '无'" />
+                    <van-cell title="时间" :value="formatTime(currentRecord.createTime)" />
+                </van-cell-group>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <van-button type="warning" block @click="handleEditRecord">修改</van-button>
+                    <van-button type="danger" block @click="handleDeleteRecord">删除</van-button>
+                </div>
+            </div>
+        </van-popup>
+        
+        <!-- 修改密码弹窗 -->
+        <van-popup v-model="showChangePassword" position="bottom" :style="{ height: '50%' }" round>
+            <div style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>修改密码</h3>
+                    <van-icon name="close" @click="showChangePassword = false" />
+                </div>
+                
+                <van-cell-group>
+                    <van-field v-model="passwordForm.oldPassword" type="password" label="原密码" placeholder="请输入原密码" clearable />
+                    <van-field v-model="passwordForm.newPassword" type="password" label="新密码" placeholder="请输入新密码" clearable />
+                </van-cell-group>
+                
+                <van-button type="primary" block style="margin-top: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" @click="handleChangePassword">确认修改</van-button>
+            </div>
+        </van-popup>
+        
+        <!-- Toast -->
+        <van-toast ref="toast" />
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                isLogin: false,
+                username: '',
+                loginTab: 'login',
+                loginForm: {
+                    account: '',
+                    password: ''
+                },
+                registerForm: {
+                    username: '',
+                    password: '',
+                    phone: '',
+                    email: ''
+                },
+                activeTab: 0,
+                monthlyData: {},
+                records: [],
+                statPeriod: 'monthly',
+                statData: {},
+                showAddRecord: false,
+                recordForm: {
+                    type: '2',
+                    amount: null,
+                    category: '',
+                    remark: ''
+                },
+                showCategoryPicker: false,
+                showRecordDetailPopup: false,
+                currentRecord: null,
+                showChangePassword: false,
+                passwordForm: {
+                    oldPassword: '',
+                    newPassword: ''
+                }
+            },
+            computed: {
+                currentMonth() {
+                    return new Date().getMonth() + 1;
+                },
+                categories() {
+                    if (this.recordForm.type === '1') {
+                        return ['薪资', '奖金', '投资收益', '兼职收入', '礼金', '其他收入'];
+                    } else {
+                        return ['餐饮', '购物', '交通', '住房', '娱乐', '医疗', '教育', '其他支出'];
+                    }
+                },
+                incomeCategories() {
+                    return ['薪资', '奖金', '投资收益', '兼职收入', '礼金', '其他收入'];
+                },
+                expenseCategories() {
+                    return ['餐饮', '购物', '交通', '住房', '娱乐', '医疗', '教育', '其他支出'];
+                }
+            },
+            created() {
+                this.checkLogin();
+            },
+            methods: {
+                checkLogin() {
+                    const userId = sessionStorage.getItem('userId');
+                    const username = sessionStorage.getItem('username');
+                    if (userId && username) {
+                        this.isLogin = true;
+                        this.username = username;
+                        this.loadData();
+                    }
+                },
+                handleLogin() {
+                    if (!this.loginForm.account || !this.loginForm.password) {
+                        this.showToast('请填写完整信息');
+                        return;
+                    }
+                    axios.post('/api/user/login', this.loginForm)
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.isLogin = true;
+                                sessionStorage.setItem('userId', '1');
+                                sessionStorage.setItem('username', this.loginForm.account);
+                                this.username = this.loginForm.account;
+                                this.showToast('登录成功');
+                                this.loadData();
+                            } else {
+                                this.showToast(res.data.msg);
+                            }
+                        })
+                        .catch(err => {
+                            this.showToast('登录失败');
+                        });
+                },
+                handleRegister() {
+                    if (!this.registerForm.username || !this.registerForm.password) {
+                        this.showToast('请填写必填信息');
+                        return;
+                    }
+                    axios.post('/api/user/register', this.registerForm)
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.showToast('注册成功，请登录');
+                                this.loginTab = 'login';
+                                this.loginForm.account = this.registerForm.username;
+                                this.registerForm = { username: '', password: '', phone: '', email: '' };
+                            } else {
+                                this.showToast(res.data.msg);
+                            }
+                        })
+                        .catch(err => {
+                            this.showToast('注册失败');
+                        });
+                },
+                handleLogout() {
+                    sessionStorage.clear();
+                    this.isLogin = false;
+                    this.activeTab = 0;
+                    this.showToast('已退出登录');
+                },
+                loadData() {
+                    this.loadMonthlyData();
+                    this.loadRecords();
+                    this.loadStatistics();
+                },
+                loadMonthlyData() {
+                    axios.get('/api/statistics/monthly')
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.monthlyData = res.data.data;
+                            }
+                        });
+                },
+                loadRecords() {
+                    axios.get('/api/record', { params: { pageNum: 1, pageSize: 20 } })
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.records = res.data.data.records || [];
+                            }
+                        });
+                },
+                loadStatistics() {
+                    const url = this.statPeriod === 'weekly' ? '/api/statistics/weekly' : '/api/statistics/monthly';
+                    axios.get(url)
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.statData = res.data.data;
+                            }
+                        });
+                },
+                handleAddRecord() {
+                    if (!this.recordForm.amount) {
+                        this.showToast('请输入金额');
+                        return;
+                    }
+                    if (!this.recordForm.category) {
+                        this.showToast('请选择分类');
+                        return;
+                    }
+                    const data = {
+                        ...this.recordForm,
+                        type: parseInt(this.recordForm.type)
+                    };
+                    axios.post('/api/record', data)
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.showToast('添加成功');
+                                this.showAddRecord = false;
+                                this.recordForm = { type: '2', amount: null, category: '', remark: '' };
+                                this.loadData();
+                            } else {
+                                this.showToast(res.data.msg);
+                            }
+                        })
+                        .catch(err => {
+                            this.showToast('添加失败');
+                        });
+                },
+                showRecordDetail(record) {
+                    this.currentRecord = record;
+                    this.showRecordDetailPopup = true;
+                },
+                handleEditRecord() {
+                    this.showToast('修改功能开发中');
+                },
+                handleDeleteRecord() {
+                    if (!this.currentRecord) return;
+                    axios.delete(`/api/record/${this.currentRecord.id}`)
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.showToast('删除成功');
+                                this.showRecordDetailPopup = false;
+                                this.loadData();
+                            } else {
+                                this.showToast(res.data.msg);
+                            }
+                        })
+                        .catch(err => {
+                            this.showToast('删除失败');
+                        });
+                },
+                handleChangePassword() {
+                    if (!this.passwordForm.oldPassword || !this.passwordForm.newPassword) {
+                        this.showToast('请填写完整信息');
+                        return;
+                    }
+                    axios.post('/api/user/changePassword', this.passwordForm)
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.showToast('密码修改成功');
+                                this.showChangePassword = false;
+                                this.passwordForm = { oldPassword: '', newPassword: '' };
+                            } else {
+                                this.showToast(res.data.msg);
+                            }
+                        })
+                        .catch(err => {
+                            this.showToast('密码修改失败');
+                        });
+                },
+                onCategoryConfirm(value) {
+                    this.recordForm.category = value;
+                    this.showCategoryPicker = false;
+                },
+                getCategoryIcon(category) {
+                    const icons = {
+                        '薪资': '💼',
+                        '奖金': '🎁',
+                        '投资收益': '📈',
+                        '兼职收入': '💻',
+                        '礼金': '🧧',
+                        '其他收入': '💰',
+                        '餐饮': '🍜',
+                        '购物': '🛒',
+                        '交通': '🚗',
+                        '住房': '🏠',
+                        '娱乐': '🎮',
+                        '医疗': '💊',
+                        '教育': '📚',
+                        '其他支出': '📝'
+                    };
+                    return icons[category] || '📝';
+                },
+                formatTime(timeStr) {
+                    if (!timeStr) return '';
+                    const date = new Date(timeStr);
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    const hour = date.getHours().toString().padStart(2, '0');
+                    const minute = date.getMinutes().toString().padStart(2, '0');
+                    return `${month}月${day}日 ${hour}:${minute}`;
+                },
+                showToast(message) {
+                    this.$refs.toast.show(message);
+                }
+            },
+            watch: {
+                statPeriod() {
+                    this.loadStatistics();
+                },
+                activeTab(val) {
+                    if (val === 0) {
+                        this.loadMonthlyData();
+                        this.loadRecords();
+                    } else if (val === 1) {
+                        this.loadStatistics();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
